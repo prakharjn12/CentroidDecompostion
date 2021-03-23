@@ -1,0 +1,65 @@
+//There can only be one king.
+#include <bits/stdc++.h>
+using namespace std;
+typedef int ll;
+const ll N=1e5+5;
+ll n,nodes;
+set<ll>g[N];
+vector<char>ans(N);
+vector<ll>sz(N),parCentroid(N);
+void dfs(ll v,ll p)
+{
+    nodes++;
+    sz[v]=1;
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        dfs(u,v);
+        sz[v]+=sz[u];
+    }
+}
+ll centroid(ll v,ll p)
+{
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        if(2*sz[u]>nodes)
+        return centroid(u,v);
+    }
+    return v;
+}
+void func(ll v,ll p,char c)
+{
+    nodes=0;
+    dfs(v,v);
+    ll centroid_=centroid(v,v);
+    ans[centroid_]=c;
+    parCentroid[centroid_]=p;
+    for(auto u:g[centroid_])
+    {
+        g[u].erase(centroid_);
+        func(u,centroid_,c+1);
+    }
+}
+int32_t main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    cin>>n;
+    for(ll i=1;i<n;i++)
+    {
+        ll u,v;
+        cin>>u>>v;
+        g[u].insert(v);
+        g[v].insert(u);
+    }
+    func(1,-1,'A');
+    for(ll i=1;i<=n;i++)
+    cout<<ans[i]<<" ";
+    return 0;
+}
+//Problem E Codeforces https://codeforces.com/contest/322/problem/E
+//Submission https://codeforces.com/contest/322/submission/110785252
