@@ -1,0 +1,161 @@
+//There can only be one king.
+#include <bits/stdc++.h>
+using namespace std;
+const int N=1e5+5;
+const int LOGN=20;
+set<int>g[N];
+multiset<int>ans[N];
+int n,m,nodes,dp[N][LOGN];
+vector<int>sz(N),lvl(N),color(N),parentCentroid(N);
+void dfs(int v,int p)
+{
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        dp[u][0]=v;
+        lvl[u]=lvl[v]+1;
+        dfs(u,v);
+    }
+}
+void dfs1(int v,int p)
+{
+    sz[v]=1;
+    nodes++;
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        dfs1(u,v);
+        sz[v]+=sz[u];
+    }
+}
+void precompute()
+{
+    for(int j=1;j<LOGN;j++)
+    {
+        for(int i=1;i<=n;i++)
+        {
+            if(dp[i][j-1]==-1)
+            continue;
+            dp[i][j]=dp[dp[i][j-1]][j-1];
+        }
+    }
+}
+int centroid(int v,int p)
+{
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        if(2*sz[u]>nodes)
+        return centroid(u,v);
+    }
+    return v;
+}
+void decompose(int v,int p)
+{
+    nodes=0;
+    dfs1(v,v);
+    int node=centroid(v,v);
+    parentCentroid[node]=p;
+    for(auto u:g[node])
+    {
+        g[u].erase(node);
+        decompose(u,node);
+    }
+}
+int lca(int u,int v)
+{
+    if(lvl[u]>lvl[v])
+    swap(u,v);
+    int d=lvl[v]-lvl[u];
+    while(d)
+    {
+        int i=log2(d);
+        v=dp[v][i];
+        d-=(1<<i);
+    }
+    if(u==v)
+    return u;
+    for(int i=LOGN-1;i>=0;i--)
+    {
+        if(dp[u][i]==dp[v][i])
+        continue;
+        u=dp[u][i];
+        v=dp[v][i];
+    }
+    return dp[u][0];
+}
+int dist(int u,int v)
+{
+    return lvl[v]+lvl[u]-2*lvl[lca(u,v)];
+}
+int32_t main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    cin>>n;
+    for(int i=1;i<n;i++)
+    {
+        int u,v;
+        cin>>u>>v;
+        g[u].insert(v);
+        g[v].insert(u);
+    }
+    memset(dp,-1,sizeof(dp));
+    dfs(1,1);
+    precompute();
+    decompose(1,0);
+    for(int i=1;i<=n;i++)
+    color[i]=1;
+    cin>>m;
+    for(int i=1;i<=m;i++)
+    {
+        int t,x;
+        cin>>t>>x;
+        t++;
+        if(t==1)
+        {
+            if(color[x])
+            {
+                int cur=x;
+                while(cur>0)
+                {
+                    ans[cur].insert(dist(cur,x));
+                    cur=parentCentroid[cur];
+                }
+                color[x]=0;
+            }
+            else
+            {
+                int cur=x;
+                while(cur>0)
+                {
+                    auto it=ans[cur].find(dist(cur,x));
+                    ans[cur].erase(it);
+                    cur=parentCentroid[cur];
+                }
+                color[x]=1;
+            }
+        }
+        else
+        {
+            int cur=x;
+            int ans_=n+1;
+            while(cur>0)
+            {
+                if(ans[cur].size())
+                ans_=min(ans_,*(ans[cur].begin())+dist(cur,x));
+                cur=parentCentroid[cur];
+            }
+            if(ans_<n)
+            cout<<ans_<<endl;
+            else
+            cout<<-1<<endl;
+        }
+    }
+    return 0;
+}
+//Problem : https://www.spoj.com/submit/QTREE5/
