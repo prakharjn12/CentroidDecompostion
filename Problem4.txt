@@ -1,0 +1,125 @@
+//There can only be one king.
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+const ll N=5e4+5;
+const ll LOGN=18;
+set<ll>g[N];
+ll n,ans,nodes,dp[LOGN][N];
+vector<ll>sz(N),parCentroid(N),prime;
+void dfs1(ll v,ll p)
+{
+    sz[v]=1;
+    nodes++;
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        dfs1(u,v);
+        sz[v]+=sz[u];
+    }
+}
+ll dfs2(ll v,ll p)
+{
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        if(2*sz[u]>nodes)
+        return dfs2(u,v);
+    }
+    return v;
+}
+void dfs3(ll v,ll p,ll depth,ll dist,ll add)
+{
+    dp[depth][dist]+=add;
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        dfs3(u,v,depth,dist+1,add);
+    }
+}
+ll dfs4(ll v,ll p,ll depth,ll dist)
+{
+    ll res=0;
+    for(ll i=0;i<prime.size();i++)
+    {
+        if(prime[i]<dist)
+        continue;
+        if(!dp[depth][prime[i]-dist])
+        break;
+        if(prime[i]==dist)
+        res+=(2*dp[depth][prime[i]-dist]);
+        else
+        res+=(dp[depth][prime[i]-dist]);
+    }
+    for(auto u:g[v])
+    {
+        if(u==p)
+        continue;
+        res+=dfs4(u,v,depth,dist+1);
+    }
+    return res;
+}
+void decompose(ll v,ll p,ll depth)
+{
+    nodes=0;
+    dfs1(v,v);
+    ll node=dfs2(v,v);
+    parCentroid[node]=p;
+    dfs3(node,node,depth,0,1);
+    ll add=0;
+    for(auto u:g[node])
+    {
+        dfs3(u,node,depth,1,-1);
+        add+=dfs4(u,node,depth,1);
+        dfs3(u,node,depth,1,1);
+    }
+    ans+=(add/2);
+    for(auto u:g[node])
+    {
+        g[u].erase(node);
+        decompose(u,node,depth+1);
+    }
+    for(ll i=0;i<N && dp[depth][i];i++)
+    dp[depth][i]=0;
+}
+void generatePrime()
+{
+    vector<ll>primeCheck(N,1);
+    for(ll i=2;i*i<N;i++)
+    {
+        if(!primeCheck[i])
+        continue;
+        for(ll j=i*i;j<N;j+=i)
+        primeCheck[j]=0;
+    }
+    for(ll i=2;i<N;i++)
+    {
+        if(primeCheck[i])
+        prime.push_back(i);
+    }
+}
+int32_t main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    generatePrime();
+    cin>>n;
+    for(ll i=1;i<n;i++)
+    {
+        ll u,v;
+        cin>>u>>v;
+        g[u].insert(v);
+        g[v].insert(u);
+    }
+    decompose(1,1,0);
+    double den=(n*(n-1)*1.0)/2.0;
+	printf("%0.10lf\n",ans/den);
+    return 0;
+}
+
+//Problem : https://www.codechef.com/problems/PRIMEDST
+//Submission : https://www.codechef.com/viewsolution/44082243
